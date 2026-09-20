@@ -1,0 +1,39 @@
+name: Build Safe Exam Browser
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup NuGet
+        uses: nuget/setup-nuget@v2
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet Packages
+        run: nuget restore SafeExamBrowser.sln
+
+      - name: Compile Solution
+        run: |
+          msbuild SafeExamBrowser.sln /p:Configuration=Release /p:Platform="x64" /m
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SafeExamBrowser-Build
+          path: |
+            **/bin/Release/**
+            **/bin/x64/Release/**
+            **/*.msi
+            **/*.exe
