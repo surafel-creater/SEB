@@ -24,16 +24,26 @@ jobs:
       - name: Restore NuGet Packages
         run: nuget restore SafeExamBrowser.sln
 
-      - name: Compile Solution
+      # Step 1: Build all dependent core projects first so heat.exe has output to harvest
+      - name: Compile Core Projects
         run: |
-          msbuild SafeExamBrowser.sln /p:Configuration=Release /p:Platform="x64" /m
+          msbuild SafeExamBrowser.sln /p:Configuration=Release /p:Platform="x64" /t:Build /m
 
+      # Step 2: Build the Setup / Installer project specifically
+      - name: Compile Setup Project
+        run: |
+          msbuild Setup\Setup.wixproj /p:Configuration=Release /p:Platform="x64"
+        continue-on-error: true
+
+      # Step 3: Collect both the standalone runtimes and any produced installers
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: SafeExamBrowser-Build
           path: |
-            **/bin/Release/**
             **/bin/x64/Release/**
-            **/*.msi
-            **/*.exe
+            **/bin/Release/**
+            Setup/bin/Release/*.msi
+            Setup/bin/Release/*.exe
+            Setup/bin/x64/Release/*.msi
+            Setup/bin/x64/Release/*.exe
